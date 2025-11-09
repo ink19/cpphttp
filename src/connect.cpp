@@ -26,6 +26,7 @@ asio::awaitable<std::unique_ptr<asio::ssl::stream<asio::ip::tcp::socket>>> Conne
 
   auto socket = std::make_unique<asio::ssl::stream<asio::ip::tcp::socket>>(executor, ssl_ctx);
   co_await connect_base(socket->next_layer());
+  LOG(INFO) << "Connected to " << m_domain << ":" << m_port;
   if (!SSL_set_tlsext_host_name(socket->native_handle(), m_domain.c_str())) {
     throw boost::system::system_error(
         boost::system::error_code(static_cast<int>(ErrCode::SSL_ERROR), RequestErrorCategory()),
@@ -33,6 +34,7 @@ asio::awaitable<std::unique_ptr<asio::ssl::stream<asio::ip::tcp::socket>>> Conne
   }
   
   co_await socket->async_handshake(asio::ssl::stream_base::client, asio::use_awaitable);
+  LOG(INFO) << "SSL handshake done";
   co_return socket;
 }
 
