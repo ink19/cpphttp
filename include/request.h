@@ -8,7 +8,6 @@
 #include <boost/asio.hpp>
 #include <boost/asio/awaitable.hpp>
 #include <boost/beast.hpp>
-#include <glog/logging.h>
 #include <fmt/format.h>
 
 #include "connect.h"
@@ -43,15 +42,12 @@ class HttpRequest {
     template<typename SocketType>
     asio::awaitable<std::string> do_request(std::unique_ptr<SocketType> conn, const http::request<http::string_body> &req) {
       co_await http::async_write(*conn, req, asio::use_awaitable);
-
       beast::flat_buffer buffer;
       http::response<http::string_body> res;
       co_await http::async_read(*conn, buffer, res, asio::use_awaitable);
       
       if (res.result() != http::status::ok) {
-        throw boost::system::system_error(
-            boost::system::error_code(static_cast<int>(res.result_int()), boost::asio::error::get_ssl_category()),
-            fmt::format("Error: {} - {}", res.result_int(), res.body()));
+        throw std::runtime_error(fmt::format("Error: {} - {}", res.result_int(), res.body()));
       }
       std::string response_body = res.body();
       co_return response_body;

@@ -3,8 +3,6 @@
 #include <boost/system.hpp>
 #include <boost/asio/ssl.hpp>
 #include <memory>
-#include <glog/logging.h>
-#include "error.h"
 
 namespace cpphttp {
 
@@ -26,15 +24,11 @@ asio::awaitable<std::unique_ptr<asio::ssl::stream<asio::ip::tcp::socket>>> Conne
 
   auto socket = std::make_unique<asio::ssl::stream<asio::ip::tcp::socket>>(executor, ssl_ctx);
   co_await connect_base(socket->next_layer());
-  LOG(INFO) << "Connected to " << m_domain << ":" << m_port;
   if (!SSL_set_tlsext_host_name(socket->native_handle(), m_domain.c_str())) {
-    throw boost::system::system_error(
-        boost::system::error_code(static_cast<int>(ErrCode::SSL_ERROR), RequestErrorCategory()),
-        "Unable to set SNI hostname");
+    throw std::runtime_error("Unable to set SNI hostname");
   }
   
   co_await socket->async_handshake(asio::ssl::stream_base::client, asio::use_awaitable);
-  LOG(INFO) << "SSL handshake done";
   co_return socket;
 }
 
@@ -44,13 +38,8 @@ asio::awaitable<void> Connect::connect_base(asio::ip::tcp::socket &socket) {
   auto points = co_await resolver.async_resolve(m_domain, std::to_string(m_port), asio::use_awaitable);
 
   if (points.empty()) {
-    throw boost::system::system_error(
-        boost::system::error_code(static_cast<int>(ErrCode::Resolve_Fail), RequestErrorCategory()),
-        "Unable to get address");
+    throw std::runtime_error("Unable to get address");
   }
-
-  LOG(INFO) << "Connecting to " << points.begin()->endpoint();
-
   co_await asio::async_connect(socket, points, asio::use_awaitable);
 }
 

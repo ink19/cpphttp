@@ -4,7 +4,6 @@
 #include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/url/parse.hpp>
 #include <boost/system.hpp>
-#include <glog/logging.h>
 #include <boost/beast.hpp>
 
 namespace cpphttp {
@@ -48,8 +47,7 @@ asio::awaitable<std::string> HttpRequest::request() {
   auto parsedURI = boost::urls::parse_uri(m_url);
 
   if (parsedURI.has_error()) {
-    LOG(ERROR) << "Invalid URL: " << m_url;
-    throw boost::system::system_error(parsedURI.error());
+    throw std::runtime_error(parsedURI.error().message());
   }
 
   std::string host = parsedURI->host();
